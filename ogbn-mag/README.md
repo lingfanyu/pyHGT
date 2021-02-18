@@ -1,14 +1,14 @@
 Evaluate HGT on ogbn-mag dataset with TransE graph embedding
 ============================
 
-This fork serves as baseline in the evaluation of [NARS](https://github.com/facebookresearch/NARS) model. 
+This fork serves as a baseline in the evaluation of [NARS](https://github.com/facebookresearch/NARS) model. 
 
-Differences compared to the original [HGT model](https://github.com/acbull/pyHGT):
-In [ogbn-mag dataset](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag), only paper nodes have input features. Here, we featurzie node types that don't have input features (e.g. author, field, institution) with TransE graph embedding.
+The difference compared to the original [HGT model](https://github.com/acbull/pyHGT):  
+In [ogbn-mag dataset](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag), only paper nodes have input features. Here, we featurize node types that don't have input features (e.g. author, field, institution) with TransE graph embedding.
 
 Dependencies
 --------------
-This model uses the folowwing python3 packages:
+This model uses the folowing python packages:
 - torch==1.5.1+cu101
 - torch_geometric==1.5.0
 	- torch_scatter==2.0.5
