@@ -1,30 +1,52 @@
-## Usage
+Evaluate HGT on ogbn-mag dataset with TransE graph embedding
+============================
 
-This experiment is based on stanford OGB (1.2.1) benchmark. The description of ogbn-mag is [avaiable here](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag). The steps are:
+This fork serves as baseline in the evaluation of [NARS](https://github.com/facebookresearch/NARS) model. 
 
-  1. run ```python preprocess_ogbn_mag.py``` to turn the dataset into our own data structure. As the MAG dataset only have input attributes (features) for paper nodes, for all the other types of nodes (author, affiliation, topic), we simply take the average of their connected paper nodes as their input features.
+Differences compared to the original [HGT model](https://github.com/acbull/pyHGT):
+In [ogbn-mag dataset](https://ogb.stanford.edu/docs/nodeprop/#ogbn-mag), only paper nodes have input features. Here, we featurzie node types that don't have input features (e.g. author, field, institution) with TransE graph embedding.
 
-  2. train the model by ```python train_ogbn_mag.py --data_dir PATH_OF_DATASET --model_dir PATH_OF_SAVED_MODEL --n_layers 4 --prev_norm  --last_norm  --use_RTE```. Remember to specify your own data and model path.
+Dependencies
+--------------
+This model uses the folowwing python3 packages:
+- torch==1.5.1+cu101
+- torch_geometric==1.5.0
+	- torch_scatter==2.0.5
+	- torch_sparse==0.6.7
+	- torch_cluster==1.5.7
+- ogb==1.2.1
+- dill
+- pandas
+- tqdm
+- sklearn
+- gensim
 
-  3. evaluate the model by ```python eval_ogbn_mag.py --data_dir PATH_OF_DATASET --model_dir PATH_OF_SAVED_MODEL --task_type variance_reduce```. We use mini-batch sampling to get node representation and prediction. Based on it, we provide two evaluation type: 
-    - 'sequential': Run the sampling for each batch of test nodes only once, and get one set of prediction results.
-    - 'variance_reduce':   Run the sampling for each batch of test nodes multiple times, and get the average prediction score for them as prediction results.
+Steps to run
+-------------
 
-Detailed hyperparameter is:
+### Generate TransE graph embedding
+Please follow instructions in [graph_embed](./graph_embed) to generate TransE embeddings.
 
-
+### Preprocess ogbn-mag dataset
+The following command converts ogbn-mag dataset into the format that HGT model uses:
+```bash
+python3 preprocess_ogbn_mag.py --graph-emb TransE_mag
 ```
-  --conv_name                      STR     Name of GNN filter (model)                           hgt
-  --n_hid                          INT     Number of hidden dimension                           512
-  --n_heads                        INT     Number of attention head                             8
-  --n_layers                       INT     Number of GNN layers                                 4
-  --prev_norm                      BOOL    Whether to use layer-norm on previous layers.        True
-  --last_norm                      BOOL    Whether to use layer-norm on the last layer.         True
-  --use_RTE                        BOOL    Whether to use RTE                                   True 
+
+### Train model
+```bash
+python3 train_ogbn_mag.py --n_hid 512 --n_layer 5 --n_heads 8 --data_dir ./OGB_MAG.pk \
+    --prev_norm --last_norm --use_RTE --conv_name hgt --sample_width 520 --sample_depth 6
 ```
 
-Reference performance numbers for the ACM dataset:
+### Evaluate model
+```bash
+python3 eval_ogbn_mag.py --n_hid 512 --n_layer 5 --n_heads 8 --data_dir ./OGB_MAG.pk \
+    --prev_norm --last_norm --use_RTE --conv_name hgt --sample_width 520 --sample_depth 6
+```
 
-| Model        | Accuracy (VR)   | Accuracy (Seq) | # Parameter     | Hardware         |
-| ---------    | --------------- | -------------- | --------------  |--------------    |
-| 4-layer HGT  | 0.5007          | 0.4940         | 21,173,389      | Tesla K80 (12GB) |
+Results on ogbn-mag
+-------------
+| Model        | Testing Accuracy        | Validation Accuracy  | # Parameter     | Hardware         |
+| ---------    | ----------------------- | ------------------   | --------------  | ---------------  |
+| 5-layer HGT  | 0.4982&plusmn;0.0013    | 0.5124&plusmn;0.0046 | 26,877,657      | Tesla T4 (15GB)  |

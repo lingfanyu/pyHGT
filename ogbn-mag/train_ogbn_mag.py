@@ -22,9 +22,9 @@ parser = argparse.ArgumentParser(description='Training GNN on ogbn-mag benchmark
 
 
 
-parser.add_argument('--data_dir', type=str, default='/datadrive/dataset/OGB_MAG.pk',
+parser.add_argument('--data_dir', type=str, default='./OGB_MAG.pk',
                     help='The address of preprocessed graph.')
-parser.add_argument('--model_dir', type=str, default='./hgt_4layer',
+parser.add_argument('--model_dir', type=str, default='./hgt_model',
                     help='The address for storing the trained models.')
 parser.add_argument('--plot', action='store_true',
                     help='Whether to plot the loss/acc curve')

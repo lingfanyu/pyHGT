@@ -1,6 +1,7 @@
 from pyHGT.data import *
 from pyHGT.utils import *
 from ogb.nodeproppred import PygNodePropPredDataset
+import torch
 
 import argparse
 
@@ -9,15 +10,17 @@ parser = argparse.ArgumentParser(description='Preprocess ogbn-mag graph')
 '''
     Dataset arguments
 '''
-parser.add_argument('--output_dir', type=str, default='/datadrive/dataset/OGB_MAG.pk',
-                    help='The address to output the preprocessed graph.')
-
+parser.add_argument('--output', type=str, default='OGB_MAG.pk',
+                    help='Path to output the preprocessed graph.')
+parser.add_argument('--graph-emb', type=str, required=True,
+                    help='Path to graph embedding')
 args = parser.parse_args()
+
+print(args)
 
 
 dataset = PygNodePropPredDataset(name='ogbn-mag')
 data = dataset[0]
-evaluator = Evaluator(name='ogbn-mag')
 edge_index_dict = data.edge_index_dict
 graph = Graph()
 edg   = graph.edge_list
@@ -40,8 +43,8 @@ for key in edge_index_dict:
             year = years[t_id]
         elist[t_id][s_id] = year
         rlist[s_id][t_id] = year
-        
-        
+
+
 edg = {}
 deg = {key : np.zeros(data.num_nodes[key]) for key in data.num_nodes}
 for k1 in graph.edge_list:
@@ -56,7 +59,7 @@ for k1 in graph.edge_list:
             for e1 in graph.edge_list[k1][k2][k3]:
                 if len(graph.edge_list[k1][k2][k3][e1]) == 0:
                     continue
-                
+
                 edg[k1][k2][k3][e1] = {}
                 for e2 in graph.edge_list[k1][k2][k3][e1]:
                     edg[k1][k2][k3][e1][e2] = graph.edge_list[k1][k2][k3][e1][e2]
@@ -66,8 +69,10 @@ graph.edge_list = edg
 
 
 
-cv = data.x_dict['paper'].numpy()
-graph.node_feature['paper'] = np.concatenate((cv, np.log10(deg['paper'].reshape(-1, 1))), axis=-1)
+cv = data.x_dict['paper']
+graph.node_feature['paper'] = cv.numpy()
+print(graph.node_feature.keys())
+
 for _type in data.num_nodes:
     print(_type)
     if _type not in ['paper', 'institution']:
@@ -83,9 +88,10 @@ for _type in data.num_nodes:
         m = normalize(sp.coo_matrix((v, i), \
             shape=(data.num_nodes[_type], data.num_nodes['paper'])))
         out = m.dot(cv)
-        graph.node_feature[_type] = np.concatenate((out, np.log10(deg[_type].reshape(-1, 1))), axis=-1)
+        graph.node_feature[_type] = out
 
-cv = graph.node_feature['author'][:, :-1]
+
+cv = graph.node_feature['author']
 i = []
 for _rel in graph.edge_list['institution']['author']:
     for j in graph.edge_list['institution']['author'][_rel]:
@@ -96,9 +102,13 @@ v = np.ones(i.shape[1])
 m = normalize(sp.coo_matrix((v, i), \
     shape=(data.num_nodes['institution'], data.num_nodes['author'])))
 out = m.dot(cv)
-graph.node_feature['institution'] = np.concatenate((out, np.log10(deg['institution'].reshape(-1, 1))), axis=-1)     
+graph.node_feature['institution'] = out
 
-
+print(graph.node_feature.keys())
+graph.node_feature['paper'] = np.concatenate((torch.zeros(graph.node_feature['paper'].shape[0], 256).numpy(), graph.node_feature['paper']), axis=-1)
+graph.node_feature['author'] = np.concatenate((torch.load(f'{args.graph_emb}/author.pt').numpy(), graph.node_feature['author']), axis=-1)
+graph.node_feature['field_of_study'] = np.concatenate((torch.load(f'{args.graph_emb}/topic.pt').numpy(), graph.node_feature['field_of_study']), axis=-1)
+graph.node_feature['institution'] = np.concatenate((torch.load(f'{args.graph_emb}/institution.pt').numpy(), graph.node_feature['institution']), axis=-1)
 
 y = data.y_dict['paper'].t().numpy()[0]
 split_idx = dataset.get_idx_split()
@@ -122,4 +132,4 @@ graph.valid_mask[graph.valid_paper] = True
 graph.test_mask = np.zeros(len(graph.node_feature['paper']),  dtype=bool)
 graph.test_mask[graph.test_paper] = True
 
-dill.dump(graph, open(args.output_dir, 'wb'))
+dill.dump(graph, open(args.output, 'wb'))

@@ -22,9 +22,9 @@ parser = argparse.ArgumentParser(description='Training GNN on ogbn-mag benchmark
 
 
 
-parser.add_argument('--data_dir', type=str, default='/datadrive/dataset/OGB_MAG.pk',
+parser.add_argument('--data_dir', type=str, default='./OGB_MAG.pk',
                     help='The address of preprocessed graph.')
-parser.add_argument('--model_dir', type=str, default='./hgt_4layer',
+parser.add_argument('--model_dir', type=str, default='./hgt_model',
                     help='The address for storing the trained models.')
 parser.add_argument('--task_type', type=str, default='variance_reduce',
                     help='Whether to use variance_reduce evaluation or sequential evaluation')
@@ -48,7 +48,7 @@ parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of attention head')
 parser.add_argument('--n_layers', type=int, default=4,
                     help='Number of GNN layers')
-parser.add_argument('--cuda', type=int, default=2,
+parser.add_argument('--cuda', type=int, default=0,
                     help='cuda')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='Dropout ratio')
@@ -180,3 +180,5 @@ with torch.no_grad():
                                 'y_pred': torch.FloatTensor(y_pred).unsqueeze(-1)
                             })['acc']
                 monitor.set_postfix(accuracy = test_acc)
+
+print(test_acc)
